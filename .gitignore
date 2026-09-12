@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment variables & secrets (NEVER COMMIT THESE)
+.env
+.env.local
+
+# Build output
+dist/
+
+# IntelliJ settings
+.idea/
+
+# Logs
+*.log
+
+# Temporary preview folders
+.agents/
+.claude/
+.cursor/
+.devin/
+prisma.config.ts
