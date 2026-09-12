@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Monitor {
+  id               String      @id @default(uuid())
+  name             String
+  url              String
+  intervalSeconds  Int         @default(60)
+  status           String      @default("PENDING") // UP, DOWN, DEGRADED, PENDING
+  consecutiveFails Int         @default(0)
+  lastCheckedAt    DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  heartbeats       Heartbeat[]
+}
+
+model Heartbeat {
+  id         String   @id @default(uuid())
+  monitorId  String
+  monitor    Monitor  @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  statusCode Int?
+  latencyMs  Int
+  isUp       Boolean
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([monitorId, createdAt])
+}
