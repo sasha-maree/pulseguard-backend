@@ -5,7 +5,7 @@ import { checkSingleMonitor } from "../services/pinger.service";
 const router = Router();
 
 // 1. GET /api/monitors - Get all monitors with their latest heartbeat
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", async (_req: Request, res: Response) => {
     try {
         const monitors = await prisma.monitor.findMany({
             include: {
@@ -36,7 +36,7 @@ router.post("/", async (req: Request, res: Response) => {
         try {
             new URL(url);
         } catch {
-            return res.status(400).json({ success: false, error: "Invalid URL format (must include https:// or http://)." });
+            return res.status(400).json({ success: false, error: "Invalid URL format (must start with http or https)." });
         }
 
         // Create monitor in database
@@ -64,7 +64,7 @@ router.post("/", async (req: Request, res: Response) => {
 // 3. GET /api/monitors/:id/heartbeats - Get recent heartbeats for charts
 router.get("/:id/heartbeats", async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const heartbeats = await prisma.heartbeat.findMany({
             where: { monitorId: id },
@@ -82,7 +82,7 @@ router.get("/:id/heartbeats", async (req: Request, res: Response) => {
 // 4. DELETE /api/monitors/:id - Delete a monitor
 router.delete("/:id", async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         await prisma.monitor.delete({
             where: { id },
