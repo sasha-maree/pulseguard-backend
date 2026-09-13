@@ -1,5 +1,6 @@
 import { performance } from "perf_hooks";
 import { prisma } from "../db";
+import { sendDiscordAlert } from "./alert.service";
 
 export async function pingUrl(url: string, timeoutMs: number = 5000) {
   const startTime = performance.now();
@@ -63,14 +64,34 @@ export async function checkSingleMonitor(monitorId: string) {
 
   // 4. Update consecutive fails & determine status
   const newConsecutiveFails = result.isUp ? 0 : monitor.consecutiveFails + 1;
-  
+
   // If it failed 2+ times in a row -> DOWN. If failed 1 time -> DEGRADED. If success -> UP.
   let newStatus = "UP";
   if (!result.isUp) {
     newStatus = newConsecutiveFails >= 2 ? "DOWN" : "DEGRADED";
   }
 
-  // 5. Update the monitor in the database
+  // 5. Trigger Discord Alerts only on state transitions (prevents alert spam!)
+  if (newStatus === "DOWN" && monitor.status !== "DOWN") {
+    await sendDiscordAlert({
+      monitorName: monitor.name,
+      url: monitor.url,
+      status: "DOWN",
+      statusCode: result.statusCode,
+      latencyMs: result.latencyMs,
+      error: result.error,
+    });
+  } else if (newStatus === "UP" && monitor.status === "DOWN") {
+    await sendDiscordAlert({
+      monitorName: monitor.name,
+      url: monitor.url,
+      status: "RECOVERED",
+      statusCode: result.statusCode,
+      latencyMs: result.latencyMs,
+    });
+  }
+
+  // 6. Update the monitor in the database
   const updatedMonitor = await prisma.monitor.update({
     where: { id: monitor.id },
     data: {
